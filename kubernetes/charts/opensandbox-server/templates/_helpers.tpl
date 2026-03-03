@@ -57,7 +57,7 @@ Namespace to use
 {{- if .Values.namespaceOverride }}
 {{- .Values.namespaceOverride }}
 {{- else }}
-{{- print "sandbox-k8s-system" }}
+{{- print "opensandbox-system" }}
 {{- end }}
 {{- end }}
 

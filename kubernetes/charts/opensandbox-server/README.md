@@ -11,16 +11,16 @@ OpenSandbox Lifecycle API server: provides sandbox create/delete and other lifec
 ## Install
 
 ```bash
-# Server only (default namespace sandbox-k8s-system)
+# Server only (default namespace opensandbox-system)
 helm install opensandbox-server ./kubernetes/charts/opensandbox-server \
-  --namespace sandbox-k8s-system \
+  --namespace opensandbox-system \
   --create-namespace
 
 # With custom image and config
 helm install opensandbox-server ./kubernetes/charts/opensandbox-server \
   --set server.image.repository=your-registry/opensandbox/server \
   --set server.image.tag=v0.1.0 \
-  --namespace sandbox-k8s-system \
+  --namespace opensandbox-system \
   --create-namespace
 ```
 
@@ -30,7 +30,7 @@ To run both the Lifecycle API server and the ingress gateway (components/ingress
 
 ```bash
 helm install opensandbox-server ./kubernetes/charts/opensandbox-server \
-  --namespace sandbox-k8s-system \
+  --namespace opensandbox-system \
   --create-namespace \
   --set server.gateway.enabled=true \
   --set server.gateway.host=gateway.example.com
@@ -46,7 +46,7 @@ Optional: override gateway image, replicas, or resources (see `server.gateway.*`
 | `server.image.tag` | Server image tag | Chart `appVersion` |
 | `server.replicaCount` | Server replicas | `2` |
 | `server.resources` | CPU/memory requests and limits | See values.yaml |
-| `namespaceOverride` | Deployment namespace | `sandbox-k8s-system` |
+| `namespaceOverride` | Deployment namespace | `opensandbox-system` |
 | `configToml` | config.toml content ([ingress] block generated from server.gateway) | See values.yaml |
 | `server.gateway.enabled` | When true: set server config to gateway and deploy components/ingress gateway | `false` |
 | `server.gateway.host` | config `gateway.address` (address returned to clients) | `opensandbox.example.com` |
@@ -60,8 +60,8 @@ Set `[kubernetes].namespace` in config for the sandbox workload namespace. Overr
 ## Upgrade and uninstall
 
 ```bash
-helm upgrade opensandbox-server ./kubernetes/charts/opensandbox-server -n sandbox-k8s-system
-helm uninstall opensandbox-server -n sandbox-k8s-system
+helm upgrade opensandbox-server ./kubernetes/charts/opensandbox-server -n opensandbox-system
+helm uninstall opensandbox-server -n opensandbox-system
 ```
 
 ## References

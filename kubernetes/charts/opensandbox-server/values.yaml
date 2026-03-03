@@ -6,7 +6,7 @@ nameOverride: ""
 # -- Resource names and app.kubernetes.io/name are fixed to this value, independent of release name
 fullnameOverride: "opensandbox-server"
 
-# -- Override the namespace (default: sandbox-k8s-system)
+# -- Override the namespace (default: opensandbox-system)
 namespaceOverride: ""
 
 # Server configuration
@@ -41,7 +41,7 @@ server:
       tag: "v1.0.2"
     replicaCount: 2
     port: 28888
-    dataplaneNamespace: "opensandbox-dataplane"
+    dataplaneNamespace: "opensandbox"
     providerType: "batchsandbox"
     logLevel: "info"
     resources:
@@ -66,7 +66,7 @@ configToml: |
 
   [kubernetes]
   kubeconfig_path = ""
-  namespace = "opensandbox-dataplane"
+  namespace = "opensandbox"
   informer_enabled = true
   informer_resync_seconds = 300
   informer_watch_timeout_seconds = 60
