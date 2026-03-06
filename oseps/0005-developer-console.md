@@ -3,7 +3,7 @@ title: Developer Console for Sandbox Operations
 authors:
   - "@divyamagrawal06"
 creation-date: 2026-03-05
-last-updated: 2026-03-05
+last-updated: 2026-03-06
 status: pending review
 ---
 
@@ -256,6 +256,13 @@ operator_subjects = []
 read_only_subjects = []
 ```
 
+Trusted-header failure behavior (Phase 1):
+
+1. Applies when `auth.mode = "api_key_and_user"` and `user_mode = "trusted_header"`.
+2. Requests on the user-auth path that are missing required trusted identity headers are treated as unauthenticated and rejected with `401 Unauthorized`.
+3. The server must NOT fall back to anonymous/default user access when trusted headers are missing.
+4. The server must NOT silently switch to another auth path UNLESS that credential is explicitly provided (for example, `OPEN-SANDBOX-API-KEY` for API key auth).
+
 Phase 2 adds:
 
 ```toml
@@ -272,7 +279,8 @@ Changes to `server/src/middleware/auth.py`:
 1. Preserve current API key path exactly.
 2. Add user principal extraction path (phase-gated by config).
 3. Attach normalized principal to `request.state.principal`.
-4. Keep proxy path exemptions behavior unchanged for sandbox proxy route.
+4. If trusted-header mode is active and required headers are missing, return `401 Unauthorized` (unauthenticated), not `403` (authenticated but forbidden).
+5. Keep proxy path exemptions behavior unchanged for sandbox proxy route.
 
 #### 3. Authorization Enforcement
 
@@ -313,6 +321,8 @@ Standalone React app living under `console/`. Pages map directly to the MVP scop
 
 The UI should disable buttons the user's role cannot use (e.g., hide "Create" for `read_only`), but the server is always the final authority. The browser only uses the user-auth path; the API key is never shipped in frontend code.
 
+If Console requests are rejected with `401` because trusted headers are missing, the Console should render an explicit "authentication required / auth proxy misconfiguration" state instead of retrying with anonymous assumptions.
+
 ### API and Spec Changes
 
 Primary lifecycle endpoints MUST remain unchanged.
@@ -320,9 +330,10 @@ Primary lifecycle endpoints MUST remain unchanged.
 Updates to `specs/sandbox-lifecycle.yml`:
 
 1. Document dual auth path (API key + user auth mode).
-2. Add `403` responses where role restrictions apply (e.g., create/renew/delete).
-3. Clarify reserved metadata keys used for ownership/team scoping.
-4. Add error codes for authorization failures.
+2. Add `401` responses for unauthenticated user-auth requests (including trusted-header mode with missing required headers).
+3. Add `403` responses where role restrictions apply (e.g., create/renew/delete).
+4. Clarify reserved metadata keys used for ownership/team scoping.
+5. Add error codes for authentication and authorization failures.
 
 ### Operational Rollout
 
@@ -339,6 +350,7 @@ Updates to `specs/sandbox-lifecycle.yml`:
    - API key success/failure unchanged.
    - user principal extraction in enabled mode.
    - dual-mode conflict behavior.
+   - trusted-header mode rejects missing required headers with `401`.
 2. Authorization logic:
    - Each action against the role permission table.
    - Owner/team scope checks (allow and deny cases).
@@ -357,6 +369,9 @@ Updates to `specs/sandbox-lifecycle.yml`:
    - Users only see sandboxes matching their owner/team.
 4. Runtime parity:
    - Scoped list/get/delete/renew behaves the same on Docker and Kubernetes.
+5. Trusted-header deployment behavior:
+   - direct Console-to-server request without proxy-injected headers returns `401`.
+   - proxy misconfiguration (one or more missing identity headers) returns `401`.
 
 ### Console Tests
 
