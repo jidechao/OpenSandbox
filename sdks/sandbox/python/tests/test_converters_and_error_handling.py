@@ -18,6 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import pytest
+from httpx import HTTPStatusError, Request, Response
 
 from opensandbox.adapters.converter.exception_converter import (
     ExceptionConverter,
@@ -36,6 +37,7 @@ from opensandbox.adapters.converter.response_handler import handle_api_error
 from opensandbox.adapters.converter.sandbox_model_converter import (
     SandboxModelConverter,
 )
+from opensandbox.api.lifecycle.errors import UnexpectedStatus
 from opensandbox.exceptions import (
     InvalidArgumentException,
     SandboxApiException,
@@ -94,6 +96,34 @@ def test_exception_converter_maps_common_types() -> None:
 
     se2 = ExceptionConverter.to_sandbox_exception(OSError("x"))
     assert isinstance(se2, SandboxInternalException)
+
+
+def test_exception_converter_maps_generated_unexpected_status_to_api_exception() -> (
+    None
+):
+    err = UnexpectedStatus(400, b'{"code":"X","message":"bad"}')
+
+    converted = ExceptionConverter.to_sandbox_exception(err)
+
+    assert isinstance(converted, SandboxApiException)
+    assert converted.status_code == 400
+    assert converted.error is not None
+    assert converted.error.code == "X"
+
+
+def test_exception_converter_maps_httpx_status_error_to_api_exception() -> None:
+    request = Request("GET", "https://example.test")
+    response = Response(
+        502, request=request, content=b'{"code":"UPSTREAM","message":"gateway"}'
+    )
+    err = HTTPStatusError("bad gateway", request=request, response=response)
+
+    converted = ExceptionConverter.to_sandbox_exception(err)
+
+    assert isinstance(converted, SandboxApiException)
+    assert converted.status_code == 502
+    assert converted.error is not None
+    assert converted.error.code == "UPSTREAM"
 
 
 def test_execution_converter_to_api_run_command_request() -> None:
