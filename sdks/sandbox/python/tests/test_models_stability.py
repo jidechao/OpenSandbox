@@ -29,6 +29,7 @@ from opensandbox.models.execd import (
     Execution,
     ExecutionError,
     ExecutionLogs,
+    ExecutionResult,
     OutputMessage,
 )
 from opensandbox.models.filesystem import MoveEntry, WriteEntry
@@ -110,7 +111,9 @@ def test_sandbox_filter_validations() -> None:
 
 
 def test_sandbox_status_and_info_alias_dump_is_stable() -> None:
-    status = SandboxStatus(state="RUNNING", last_transition_at=datetime(2025, 1, 1, tzinfo=timezone.utc))
+    status = SandboxStatus(
+        state="RUNNING", last_transition_at=datetime(2025, 1, 1, tzinfo=timezone.utc)
+    )
     info = SandboxInfo(
         id=str(__import__("uuid").uuid4()),
         status=status,
@@ -276,6 +279,10 @@ def _make_output(text: str, *, is_error: bool = False) -> OutputMessage:
     return OutputMessage(text=text, timestamp=0, is_error=is_error)
 
 
+def _make_result(text: str) -> ExecutionResult:
+    return ExecutionResult(text=text, timestamp=0)
+
+
 def test_execution_str_stdout_only() -> None:
     ex = Execution(
         logs=ExecutionLogs(
@@ -289,7 +296,7 @@ def test_execution_str_with_stderr() -> None:
     ex = Execution(
         logs=ExecutionLogs(
             stdout=[_make_output("ok")],
-            stderr=[_make_output("warn")],
+            stderr=[_make_output("warn", is_error=True)],
         ),
     )
     assert str(ex) == "ok\n[stderr]\nwarn"
@@ -311,7 +318,37 @@ def test_execution_text_property() -> None:
     ex = Execution(
         logs=ExecutionLogs(
             stdout=[_make_output("line1"), _make_output("line2")],
-            stderr=[_make_output("ignored")],
+            stderr=[_make_output("ignored", is_error=True)],
         ),
     )
     assert ex.text == "line1\nline2"
+
+
+def test_execution_text_includes_results() -> None:
+    """code-interpreter stores return values in result, not stdout."""
+    ex = Execution(
+        result=[_make_result("4")],
+    )
+    assert ex.text == "4"
+    assert str(ex) == "4"
+
+
+def test_execution_text_combines_stdout_and_results() -> None:
+    ex = Execution(
+        logs=ExecutionLogs(
+            stdout=[_make_output("3.11.14")],
+        ),
+        result=[_make_result("4")],
+    )
+    assert ex.text == "3.11.14\n4"
+
+
+def test_execution_text_strips_trailing_newlines() -> None:
+    """code-interpreter streaming sends chunks with trailing newlines."""
+    ex = Execution(
+        logs=ExecutionLogs(
+            stdout=[_make_output("1\n"), _make_output("2\n")],
+        ),
+    )
+    assert ex.text == "1\n2"
+    assert str(ex) == "1\n2"
