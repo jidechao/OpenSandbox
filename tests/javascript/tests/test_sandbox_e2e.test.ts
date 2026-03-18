@@ -409,13 +409,13 @@ test("01f sandbox create with PVC named volume subPath mount", async () => {
     );
     expect(writeResult.error).toBeUndefined();
 
-    let readBack;
+    let readBack: Awaited<ReturnType<typeof subpathSandbox.commands.run>> | undefined;
     for (let attempt = 0; attempt < 3; attempt++) {
       readBack = await subpathSandbox.commands.run(
         `cat ${containerMountPath}/output.txt`
       );
       if (readBack.logs.stdout.length > 0) break;
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
     }
     expect(readBack!.error).toBeUndefined();
     expect(readBack!.logs.stdout).toHaveLength(1);
@@ -550,7 +550,7 @@ test("02a command status + background logs", async () => {
     logsText += logs.content;
     cursor = logs.cursor ?? cursor;
     if (logsText.includes("log-line-2")) break;
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
   }
 
   expect(logsText.includes("log-line-1")).toBe(true);
@@ -679,14 +679,14 @@ test("03 filesystem operations: CRUD + replace/move/delete + range + stream", as
     { workingDirectory: "/tmp" }
   );
   for (let attempt = 0; attempt < 3; attempt++) {
-    expect(verify.error).toBeUndefined();
-    if (verify.logs.stdout[0]?.text === "OK") break;
+    if (!verify.error && verify.logs.stdout[0]?.text === "OK") break;
     await new Promise((r) => setTimeout(r, 1000));
     verify = await sandbox.commands.run(
       `test ! -d ${dir1} && test ! -d ${dir2} && echo OK`,
       { workingDirectory: "/tmp" }
     );
   }
+  expect(verify.error).toBeUndefined();
   expect(verify.logs.stdout[0]?.text).toBe("OK");
 });
 
