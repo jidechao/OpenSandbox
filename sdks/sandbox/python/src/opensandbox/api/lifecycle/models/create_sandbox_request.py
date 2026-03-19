@@ -73,6 +73,8 @@ class CreateSandboxRequest:
                 duration.
                 The maximum is controlled by the server configuration (`server.max_sandbox_timeout_seconds`).
                 Omit or set null to disable automatic expiration and require explicit cleanup.
+                Note: manual cleanup support is runtime-dependent; Kubernetes providers may reject
+                null timeout when the underlying workload provider does not support non-expiring sandboxes.
             env (CreateSandboxRequestEnv | Unset): Environment variables to inject into the sandbox runtime. Example:
                 {'API_KEY': 'secret-key', 'DEBUG': 'true', 'LOG_LEVEL': 'info'}.
             metadata (CreateSandboxRequestMetadata | Unset): Custom key-value metadata for management, filtering, and

@@ -584,6 +584,8 @@ export interface components {
              * @description Sandbox timeout in seconds. The sandbox will automatically terminate after this duration.
              *     The maximum is controlled by the server configuration (`server.max_sandbox_timeout_seconds`).
              *     Omit or set null to disable automatic expiration and require explicit cleanup.
+             *     Note: manual cleanup support is runtime-dependent; Kubernetes providers may reject
+             *     null timeout when the underlying workload provider does not support non-expiring sandboxes.
              */
             timeout?: number | null;
             /**
@@ -820,6 +822,7 @@ export interface components {
          *     The runtime mounts a host-side OSS path under `storage.ossfs_mount_root`
          *     and bind-mounts the resolved path into the sandbox container.
          *     Prefix selection is expressed via `Volume.subPath`.
+         *     In Docker runtime, OSSFS backend requires OpenSandbox Server to run on a Linux host with FUSE support.
          */
         OSSFS: {
             /** @description OSS bucket name. */
@@ -832,7 +835,13 @@ export interface components {
              * @enum {string}
              */
             version: "1.0" | "2.0";
-            /** @description Additional ossfs mount options. */
+            /**
+             * @description Additional ossfs mount options.
+             *     Runtime encodes options by `version`:
+             *     - `1.0`: mounts with `ossfs ... -o <option>`
+             *     - `2.0`: mounts with `ossfs2 mount ... -c <config-file>` and encodes options as `--<option>` lines in the config file
+             *     Option values must be provided as raw payloads without leading `-`.
+             */
             options?: string[];
             /** @description OSS access key ID for inline credentials mode. */
             accessKeyId: string;

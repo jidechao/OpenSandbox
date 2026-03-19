@@ -30,9 +30,9 @@ to make failures easier to locate and debug.
 import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import timedelta
-from typing import Awaitable, Callable
 
 import pytest
 from code_interpreter import CodeInterpreter

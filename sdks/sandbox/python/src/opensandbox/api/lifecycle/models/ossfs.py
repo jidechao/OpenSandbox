@@ -34,6 +34,7 @@ class OSSFS:
     The runtime mounts a host-side OSS path under `storage.ossfs_mount_root`
     and bind-mounts the resolved path into the sandbox container.
     Prefix selection is expressed via `Volume.subPath`.
+    In Docker runtime, OSSFS backend requires OpenSandbox Server to run on a Linux host with FUSE support.
 
         Attributes:
             bucket (str): OSS bucket name.
@@ -42,9 +43,12 @@ class OSSFS:
             access_key_secret (str): OSS access key secret for inline credentials mode.
             version (OSSFSVersion | Unset): ossfs major version used by runtime mount integration. Default:
                 OSSFSVersion.VALUE_1.
-            options (list[str] | Unset): Additional ossfs mount options. Runtime encoding depends on version:
-                `1.0` -> `ossfs ... -o <option>`, `2.0` -> `ossfs2 config line --<option>`.
-                Provide raw option payloads without leading `-`.
+            options (list[str] | Unset): Additional ossfs mount options.
+                Runtime encodes options by `version`:
+                - `1.0`: mounts with `ossfs ... -o <option>`
+                - `2.0`: mounts with `ossfs2 mount ... -c <config-file>` and encodes options as `--<option>` lines in the config
+                file
+                Option values must be provided as raw payloads without leading `-`.
     """
 
     bucket: str

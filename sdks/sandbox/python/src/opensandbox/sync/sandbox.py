@@ -24,7 +24,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from opensandbox.config.connection_sync import ConnectionConfigSync
-from opensandbox.constants import DEFAULT_EXECD_PORT
+from opensandbox.constants import DEFAULT_EGRESS_PORT, DEFAULT_EXECD_PORT
 from opensandbox.exceptions import (
     InvalidArgumentException,
     SandboxException,
@@ -33,6 +33,7 @@ from opensandbox.exceptions import (
 )
 from opensandbox.models.sandboxes import (
     NetworkPolicy,
+    NetworkRule,
     SandboxEndpoint,
     SandboxImageSpec,
     SandboxInfo,
@@ -43,6 +44,7 @@ from opensandbox.models.sandboxes import (
 from opensandbox.sync.adapters.factory import AdapterFactorySync
 from opensandbox.sync.services import (
     CommandsSync,
+    EgressSync,
     FilesystemSync,
     HealthSync,
     MetricsSync,
@@ -117,6 +119,7 @@ class SandboxSync:
         command_service: CommandsSync,
         health_service: HealthSync,
         metrics_service: MetricsSync,
+        egress_service: EgressSync,
         connection_config: ConnectionConfigSync,
         custom_health_check: Callable[["SandboxSync"], bool] | None = None,
     ) -> None:
@@ -129,6 +132,7 @@ class SandboxSync:
         self._command_service = command_service
         self._health_service = health_service
         self._metrics_service = metrics_service
+        self._egress_service = egress_service
         self._connection_config = connection_config
         self._custom_health_check = custom_health_check
 
@@ -228,6 +232,25 @@ class SandboxSync:
             new_expiration,
         )
         return self._sandbox_service.renew_sandbox_expiration(self.id, new_expiration)
+
+    def get_egress_policy(self) -> NetworkPolicy:
+        """
+        Get current egress policy for this sandbox.
+        """
+        return self._egress_service.get_policy()
+
+    def patch_egress_rules(self, rules: list[NetworkRule]) -> None:
+        """
+        Patch egress rules for this sandbox using sidecar merge semantics.
+
+        Rules in this patch payload take priority over existing rules with the
+        same target. Existing rules for other targets remain unchanged. Within a
+        single patch payload, the first rule for a target wins.
+
+        This operation does not replace the entire policy and does not change
+        the current defaultAction.
+        """
+        self._egress_service.patch_rules(rules)
 
     def pause(self) -> None:
         """
@@ -438,6 +461,9 @@ class SandboxSync:
             execd_endpoint = sandbox_service.get_sandbox_endpoint(
                 response.id, DEFAULT_EXECD_PORT, config.use_server_proxy
             )
+            egress_endpoint = sandbox_service.get_sandbox_endpoint(
+                response.id, DEFAULT_EGRESS_PORT, config.use_server_proxy
+            )
 
             sandbox = cls(
                 sandbox_id=response.id,
@@ -446,6 +472,7 @@ class SandboxSync:
                 command_service=factory.create_command_service(execd_endpoint),
                 health_service=factory.create_health_service(execd_endpoint),
                 metrics_service=factory.create_metrics_service(execd_endpoint),
+                egress_service=factory.create_egress_service(egress_endpoint),
                 connection_config=config,
                 custom_health_check=health_check,
             )
@@ -517,6 +544,9 @@ class SandboxSync:
             execd_endpoint = sandbox_service.get_sandbox_endpoint(
                 sandbox_id, DEFAULT_EXECD_PORT, config.use_server_proxy
             )
+            egress_endpoint = sandbox_service.get_sandbox_endpoint(
+                sandbox_id, DEFAULT_EGRESS_PORT, config.use_server_proxy
+            )
 
             sandbox = cls(
                 sandbox_id=sandbox_id,
@@ -525,6 +555,7 @@ class SandboxSync:
                 command_service=factory.create_command_service(execd_endpoint),
                 health_service=factory.create_health_service(execd_endpoint),
                 metrics_service=factory.create_metrics_service(execd_endpoint),
+                egress_service=factory.create_egress_service(egress_endpoint),
                 connection_config=config,
                 custom_health_check=health_check,
             )
@@ -588,6 +619,9 @@ class SandboxSync:
             execd_endpoint = sandbox_service.get_sandbox_endpoint(
                 sandbox_id, DEFAULT_EXECD_PORT, config.use_server_proxy
             )
+            egress_endpoint = sandbox_service.get_sandbox_endpoint(
+                sandbox_id, DEFAULT_EGRESS_PORT, config.use_server_proxy
+            )
 
             sandbox = cls(
                 sandbox_id=sandbox_id,
@@ -596,6 +630,7 @@ class SandboxSync:
                 command_service=factory.create_command_service(execd_endpoint),
                 health_service=factory.create_health_service(execd_endpoint),
                 metrics_service=factory.create_metrics_service(execd_endpoint),
+                egress_service=factory.create_egress_service(egress_endpoint),
                 connection_config=config,
                 custom_health_check=health_check,
             )

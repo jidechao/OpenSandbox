@@ -2,12 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  DEFAULT_EGRESS_PORT,
+  DEFAULT_EXECD_PORT,
   DEFAULT_TIMEOUT_SECONDS,
   Sandbox,
 } from "../dist/index.js";
 
 function createAdapterFactory() {
   const recordedRequests = [];
+  const endpointCalls = [];
+  const egressStackCalls = [];
+  const egressService = {
+    async getPolicy() {
+      return {
+        defaultAction: "deny",
+        egress: [{ action: "allow", target: "pypi.org" }],
+      };
+    },
+    async patchRules() {},
+  };
   const sandboxes = {
     async createSandbox(req) {
       recordedRequests.push(req);
@@ -25,8 +38,9 @@ function createAdapterFactory() {
     async renewSandboxExpiration() {
       throw new Error("not implemented");
     },
-    async getSandboxEndpoint() {
-      return { endpoint: "127.0.0.1:5000", headers: {} };
+    async getSandboxEndpoint(_sandboxId, port) {
+      endpointCalls.push(port);
+      return { endpoint: `127.0.0.1:${port}`, headers: { "x-port": String(port) } };
     },
   };
 
@@ -42,9 +56,13 @@ function createAdapterFactory() {
         metrics: {},
       };
     },
+    createEgressStack(opts) {
+      egressStackCalls.push(opts);
+      return { egress: egressService };
+    },
   };
 
-  return { adapterFactory, recordedRequests };
+  return { adapterFactory, recordedRequests, endpointCalls, egressStackCalls };
 }
 
 test("Sandbox.create omits timeout when timeoutSeconds is null", async () => {
@@ -105,4 +123,23 @@ test("Sandbox.create rejects non-finite timeoutSeconds", async () => {
       /timeoutSeconds must be a finite number/
     );
   }
+});
+
+test("Sandbox creates and reuses egress service during sandbox lifecycle", async () => {
+  const { adapterFactory, endpointCalls, egressStackCalls } = createAdapterFactory();
+
+  const sandbox = await Sandbox.create({
+    adapterFactory,
+    connectionConfig: { domain: "http://127.0.0.1:8080" },
+    image: "python:3.12",
+    skipHealthCheck: true,
+  });
+
+  await sandbox.getEgressPolicy();
+  await sandbox.patchEgressRules([{ action: "allow", target: "www.github.com" }]);
+
+  assert.deepEqual(endpointCalls, [DEFAULT_EXECD_PORT, DEFAULT_EGRESS_PORT]);
+  assert.equal(egressStackCalls.length, 1);
+  assert.equal(egressStackCalls[0].egressBaseUrl, `http://127.0.0.1:${DEFAULT_EGRESS_PORT}`);
+  assert.deepEqual(egressStackCalls[0].endpointHeaders, { "x-port": String(DEFAULT_EGRESS_PORT) });
 });

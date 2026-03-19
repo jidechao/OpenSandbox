@@ -347,8 +347,7 @@ public class CodeInterpreterE2ETest extends BaseE2ETest {
                         .context(pythonContext)
                         .build();
 
-        Execution varResult =
-                runWithRetry(varRequest, perExecTimeout, 2, "python-state-setup");
+        Execution varResult = runWithRetry(varRequest, perExecTimeout, 2, "python-state-setup");
 
         assertNotNull(varResult);
         assertNotNull(varResult.getId());
@@ -613,8 +612,7 @@ public class CodeInterpreterE2ETest extends BaseE2ETest {
             return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             future.cancel(true);
-            throw new AssertionError(
-                    "Code execution did not complete within " + timeout, e);
+            throw new AssertionError("Code execution did not complete within " + timeout, e);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof RuntimeException) {

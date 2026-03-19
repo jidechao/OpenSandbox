@@ -323,7 +323,22 @@ var sandbox = await Sandbox.CreateAsync(new SandboxCreateOptions
 });
 ```
 
-### 3. 资源清理
+### 3. 运行时 Egress 策略更新
+
+运行时的 egress 查询和 patch 会直接访问沙箱内的 egress sidecar。
+SDK 会先解析 `18080` 端口对应的 sandbox endpoint，再调用 sidecar 的 `/policy` API。
+
+```csharp
+var policy = await sandbox.GetEgressPolicyAsync();
+
+await sandbox.PatchEgressRulesAsync(new[]
+{
+    new NetworkRule { Action = NetworkRuleAction.Allow, Target = "www.github.com" },
+    new NetworkRule { Action = NetworkRuleAction.Deny, Target = "pypi.org" }
+});
+```
+
+### 4. 资源清理
 
 `Sandbox` 和 `SandboxManager` 都实现了 `IAsyncDisposable`。完成后使用 `await using` 或调用 `DisposeAsync()`。
 

@@ -340,7 +340,28 @@ var sandbox = await Sandbox.CreateAsync(new SandboxCreateOptions
 });
 ```
 
-### 4. Timeout and Retry Behavior
+### 4. Runtime Egress Policy Updates
+
+Runtime egress reads and patches go directly to the sandbox egress sidecar.
+The SDK first resolves the sandbox endpoint on port `18080`, then calls the sidecar `/policy` API.
+
+Patch uses merge semantics:
+- Incoming rules take priority over existing rules with the same `Target`.
+- Existing rules for other targets remain unchanged.
+- Within a single patch payload, the first rule for a `Target` wins.
+- The current `DefaultAction` is preserved.
+
+```csharp
+var policy = await sandbox.GetEgressPolicyAsync();
+
+await sandbox.PatchEgressRulesAsync(new[]
+{
+    new NetworkRule { Action = NetworkRuleAction.Allow, Target = "www.github.com" },
+    new NetworkRule { Action = NetworkRuleAction.Deny, Target = "pypi.org" }
+});
+```
+
+### 5. Timeout and Retry Behavior
 
 - `ConnectionConfig.RequestTimeoutSeconds` controls timeout for SDK HTTP calls.
 - `RunCommandOptions.TimeoutSeconds` controls command execution timeout for command runs.
@@ -348,7 +369,7 @@ var sandbox = await Sandbox.CreateAsync(new SandboxCreateOptions
 - `ReadyTimeoutSeconds` controls how long `CreateAsync` / `ConnectAsync` waits for readiness.
 - The SDK does not automatically retry failed API requests; implement retries in caller code where appropriate.
 
-### 5. Resource Cleanup
+### 6. Resource Cleanup
 
 Both `Sandbox` and `SandboxManager` implement `IAsyncDisposable`. Use `await using` or call `DisposeAsync()` when done.
 

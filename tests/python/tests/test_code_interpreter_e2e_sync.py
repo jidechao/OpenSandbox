@@ -21,10 +21,10 @@ This mirrors `test_code_interpreter_e2e.py` but uses the synchronous SDK.
 
 import logging
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, contextmanager
 from datetime import timedelta
-from typing import Callable
 
 import pytest
 from code_interpreter import CodeInterpreterSync

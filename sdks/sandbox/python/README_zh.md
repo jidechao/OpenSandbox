@@ -325,3 +325,18 @@ sandbox = await Sandbox.create(
     ),
 )
 ```
+
+### 3. 运行时 Egress 策略更新
+
+运行时的 egress 查询和 patch 不再通过 lifecycle API 转发，而是由 SDK 先解析沙箱在 `18080` 端口上的 endpoint，再直接调用 sidecar 的 `/policy` API。
+
+```python
+policy = await sandbox.get_egress_policy()
+
+await sandbox.patch_egress_rules(
+    [
+        NetworkRule(action="allow", target="www.github.com"),
+        NetworkRule(action="deny", target="pypi.org"),
+    ]
+)
+```

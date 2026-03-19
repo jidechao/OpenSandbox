@@ -253,7 +253,27 @@ const sandbox = await Sandbox.create({
 });
 ```
 
-### 3. Resource cleanup
+### 3. Runtime Egress Policy Updates
+
+Runtime egress reads and patches go directly to the sandbox egress sidecar.
+The SDK first resolves the sandbox endpoint on port `18080`, then calls the sidecar `/policy` API.
+
+Patch uses merge semantics:
+- Incoming rules take priority over existing rules with the same `target`.
+- Existing rules for other targets remain unchanged.
+- Within a single patch payload, the first rule for a `target` wins.
+- The current `defaultAction` is preserved.
+
+```ts
+const policy = await sandbox.getEgressPolicy();
+
+await sandbox.patchEgressRules([
+  { action: "allow", target: "www.github.com" },
+  { action: "deny", target: "pypi.org" },
+]);
+```
+
+### 4. Resource cleanup
 
 Both `Sandbox` and `SandboxManager` own a scoped HTTP agent when running on Node.js
 so you can safely reuse the same `ConnectionConfig`. Once you are finished interacting

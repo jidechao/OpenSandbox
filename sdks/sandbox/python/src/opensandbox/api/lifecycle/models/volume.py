@@ -62,6 +62,7 @@ class Volume:
                 The runtime mounts a host-side OSS path under `storage.ossfs_mount_root`
                 and bind-mounts the resolved path into the sandbox container.
                 Prefix selection is expressed via `Volume.subPath`.
+                In Docker runtime, OSSFS backend requires OpenSandbox Server to run on a Linux host with FUSE support.
             read_only (bool | Unset): If true, the volume is mounted as read-only. Defaults to false (read-write).
                  Default: False.
             sub_path (str | Unset): Optional subdirectory under the backend path to mount.

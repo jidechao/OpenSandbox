@@ -252,7 +252,21 @@ const sandbox = await Sandbox.create({
 });
 ```
 
-### 3. 资源清理
+### 3. 运行时 Egress 策略更新
+
+运行时的 egress 查询和 patch 会直接访问沙箱内的 egress sidecar。
+SDK 会先解析 `18080` 端口对应的 sandbox endpoint，再调用 sidecar 的 `/policy` API。
+
+```ts
+const policy = await sandbox.getEgressPolicy();
+
+await sandbox.patchEgressRules([
+  { action: "allow", target: "www.github.com" },
+  { action: "deny", target: "pypi.org" },
+]);
+```
+
+### 4. 资源清理
 
 在 Node.js 环境下，`Sandbox` 和 `SandboxManager` 会拥有各自的 HTTP agent，因此即使多个实例共享同一个 `ConnectionConfig` 也不会互相影响。SDK 会借助 `ConnectionConfig.withTransportIfMissing()` 复刻每个实例的 transport。完成使用后调用 `sandbox.close()` / `manager.close()` 来释放底层连接池；
 
