@@ -273,7 +273,7 @@ class BatchSandboxProvider(WorkloadProvider):
         self._merge_pod_spec_extras(batchsandbox, extra_volumes, extra_mounts)
         if platform is not None:
             merged_pod_spec = batchsandbox.get("spec", {}).get("template", {}).get("spec", {})
-            self._ensure_platform_compatible_with_affinity(merged_pod_spec, platform)
+            WorkloadProvider.ensure_platform_compatible_with_affinity(merged_pod_spec, platform)
         
         # Create BatchSandbox
         created = self.k8s_client.create_custom_object(
@@ -331,94 +331,11 @@ class BatchSandboxProvider(WorkloadProvider):
             .get("template", {})
             .get("spec", {})
         )
-        template_selector = (
-            template_spec
-            .get("nodeSelector", {})
+        WorkloadProvider.apply_platform_node_selector(
+            pod_spec=pod_spec,
+            template_spec=template_spec if isinstance(template_spec, dict) else {},
+            platform=platform,
         )
-        if not isinstance(template_selector, dict):
-            template_selector = {}
-
-        requested = {
-            "kubernetes.io/os": platform.os,
-            "kubernetes.io/arch": platform.arch,
-        }
-        for key, value in requested.items():
-            existing = template_selector.get(key)
-            if existing is not None and existing != value:
-                raise ValueError(
-                    f"platform conflict with template nodeSelector: '{key}' "
-                    f"is '{existing}', request expects '{value}'."
-                )
-        self._ensure_platform_compatible_with_affinity(template_spec, platform)
-
-        node_selector = pod_spec.setdefault("nodeSelector", {})
-        if not isinstance(node_selector, dict):
-            node_selector = {}
-            pod_spec["nodeSelector"] = node_selector
-        node_selector.update(requested)
-
-    def _ensure_platform_compatible_with_affinity(
-        self,
-        pod_spec: Dict[str, Any],
-        platform: PlatformSpec,
-    ) -> None:
-        affinity = pod_spec.get("affinity", {})
-        if not isinstance(affinity, dict):
-            return
-
-        node_affinity = affinity.get("nodeAffinity", {})
-        if not isinstance(node_affinity, dict):
-            return
-
-        required = node_affinity.get("requiredDuringSchedulingIgnoredDuringExecution", {})
-        if not isinstance(required, dict):
-            return
-
-        terms = required.get("nodeSelectorTerms", [])
-        if not isinstance(terms, list) or not terms:
-            return
-
-        requested = {
-            "kubernetes.io/os": platform.os,
-            "kubernetes.io/arch": platform.arch,
-        }
-        if any(self._node_selector_term_satisfiable(term, requested) for term in terms if isinstance(term, dict)):
-            return
-
-        raise ValueError(
-            "platform conflict with template nodeAffinity: required node affinity "
-            f"does not allow requested platform '{platform.os}/{platform.arch}'."
-        )
-
-    @staticmethod
-    def _node_selector_term_satisfiable(
-        term: Dict[str, Any],
-        requested: Dict[str, str],
-    ) -> bool:
-        expressions = term.get("matchExpressions", [])
-        if not isinstance(expressions, list):
-            expressions = []
-
-        for expr in expressions:
-            if not isinstance(expr, dict):
-                continue
-            key = expr.get("key")
-            if key not in requested:
-                continue
-            operator = expr.get("operator")
-            values = expr.get("values", [])
-            if not isinstance(values, list):
-                values = []
-            value = requested[key]
-
-            if operator == "In" and value not in values:
-                return False
-            if operator == "NotIn" and value in values:
-                return False
-            if operator == "DoesNotExist":
-                return False
-
-        return True
     
     def _create_workload_from_pool(
         self,

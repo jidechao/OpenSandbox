@@ -30,11 +30,12 @@ from opensandbox_server.services.validators import (
 )
 
 
-def test_ensure_platform_valid_accepts_windows():
+def test_ensure_platform_valid_rejects_windows_until_runtime_support_ready():
     platform = PlatformSpec(os="windows", arch="amd64")
-    ensure_platform_valid(platform)
-    assert platform.os == "windows"
-    assert platform.arch == "amd64"
+    with pytest.raises(HTTPException) as exc_info:
+        ensure_platform_valid(platform)
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail["code"] == SandboxErrorCodes.INVALID_PARAMETER
 
 
 def test_ensure_platform_valid_rejects_unsupported_os():

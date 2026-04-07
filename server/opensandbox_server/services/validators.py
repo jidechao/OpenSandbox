@@ -236,13 +236,14 @@ def ensure_platform_valid(platform: Optional["PlatformSpec"]) -> None:
     Validate platform os/arch values for v1 platform contract.
 
     Supported values in this iteration:
-    - os: linux, windows
+    - os: linux
     - arch: amd64, arm64
     """
     if platform is None:
         return
 
-    supported_os = {"linux", "windows"}
+    # TODO: expand OS validation (e.g. windows) when runtime support is ready.
+    supported_os = {"linux"}
     supported_arch = {"amd64", "arm64"}
     normalized_os = platform.os.strip().lower()
     normalized_arch = platform.arch.strip().lower()

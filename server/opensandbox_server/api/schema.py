@@ -60,7 +60,7 @@ class PlatformSpec(BaseModel):
 
     os: str = Field(
         ...,
-        description="Target operating system (for example 'linux' or 'windows').",
+        description="Target operating system (for example 'linux').",
     )
     arch: str = Field(
         ...,
@@ -334,8 +334,7 @@ class CreateSandboxRequest(BaseModel):
             "Optional platform constraint for sandbox scheduling/runtime selection. "
             "If omitted, runtime default behavior applies (runtime-specific and not a fixed "
             "architecture guarantee). If specified, runtime must satisfy this platform or fail "
-            "explicitly. Runtime and image support still apply (for example, windows requires "
-            "compatible runtime and image support)."
+            "explicitly."
         ),
     )
     timeout: Optional[int] = Field(

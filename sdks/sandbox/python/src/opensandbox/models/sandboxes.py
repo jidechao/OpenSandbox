@@ -97,7 +97,7 @@ class SandboxImageSpec(BaseModel):
 class PlatformSpec(BaseModel):
     """Runtime platform constraint for sandbox provisioning."""
 
-    os: Literal["linux", "windows"] = Field(
+    os: Literal["linux"] = Field(
         description="Target operating system for sandbox provisioning."
     )
     arch: Literal["amd64", "arm64"] = Field(

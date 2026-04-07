@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from httpx import HTTPStatusError, Request, Response
+from pydantic import ValidationError
 
 from opensandbox.adapters.converter.exception_converter import (
     ExceptionConverter,
@@ -261,22 +262,9 @@ def test_sandbox_model_converter_to_api_create_request_and_renew_tz() -> None:
     assert renew.expires_at.tzinfo is timezone.utc
 
 
-def test_platform_spec_accepts_windows_and_serializes_in_request() -> None:
-    req = SandboxModelConverter.to_api_create_sandbox_request(
-        spec=SandboxImageSpec("python:3.11"),
-        entrypoint=["/bin/sh"],
-        env={},
-        metadata={},
-        timeout=timedelta(seconds=3),
-        resource={"cpu": "100m"},
-        platform=PlatformSpec(os="windows", arch="amd64"),
-        network_policy=None,
-        extensions={},
-        volumes=None,
-    )
-
-    dumped = req.to_dict()
-    assert dumped["platform"] == {"os": "windows", "arch": "amd64"}
+def test_platform_spec_rejects_windows_before_request_conversion() -> None:
+    with pytest.raises(ValidationError):
+        PlatformSpec(os="windows", arch="amd64")
 
 
 def test_sandbox_model_converter_omits_timeout_for_manual_cleanup() -> None:

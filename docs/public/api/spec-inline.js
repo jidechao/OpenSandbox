@@ -714,13 +714,11 @@ components:
           is injected unless provided by request or workload template.
         - If provided and cannot be satisfied by runtime/template/pool constraints,
           request must fail explicitly.
-        - Runtime and image support still apply (for example, \`windows\` requires
-          compatible runtime and image support).
       properties:
         os:
           type: string
-          enum: [linux, windows]
-          description: Target operating system (for example \`linux\` or \`windows\`).
+          enum: [linux]
+          description: Target operating system (for example \`linux\`).
           example: linux
         arch:
           type: string
