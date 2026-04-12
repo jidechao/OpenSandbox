@@ -480,7 +480,6 @@ func (r *BatchSandboxReconciler) scaleBatchSandbox(ctx context.Context, batchSan
 	for i := range pods {
 		pod := pods[i]
 		BatchSandboxScaleExpectations.ObserveScale(controllerutils.GetControllerKey(batchSandbox), expectations.Create, pod.Name)
-		pods = append(pods, pod)
 		idx, err := parseIndex(pod)
 		if err != nil {
 			return fmt.Errorf("failed to parse idx Pod %s, err %w", pod.Name, err)
