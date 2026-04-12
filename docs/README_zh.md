@@ -63,8 +63,8 @@ OpenSandbox 已进入 [CNCF Landscape](https://landscape.cncf.io/?item=orchestra
 #### 1. 安装并配置 Server
 
 ```bash
-uv pip install opensandbox-server
-opensandbox-server init-config ~/.sandbox.toml --example docker-zh
+# 无需额外配置 PATH，直接通过 uvx 调用 CLI
+uvx opensandbox-server init-config ~/.sandbox.toml --example docker-zh
 ```
 
 > 如果需要开发或使用源码编译，可通过clone仓库进行开发。
@@ -78,10 +78,10 @@ opensandbox-server init-config ~/.sandbox.toml --example docker-zh
 #### 2. 启动沙箱 Server
 
 ```bash
-opensandbox-server
+uvx opensandbox-server
 
 # Show help
-opensandbox-server -h
+uvx opensandbox-server -h
 ```
 
 #### 3. 创建代码解释器，并在沙箱中执行命令

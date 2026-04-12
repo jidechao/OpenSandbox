@@ -69,8 +69,8 @@ Requirements:
 #### 1. Install and Configure the Sandbox Server
 
 ```bash
-uv pip install opensandbox-server
-opensandbox-server init-config ~/.sandbox.toml --example docker
+# No PATH setup required; uvx resolves and runs the CLI directly.
+uvx opensandbox-server init-config ~/.sandbox.toml --example docker
 ```
 
 > If you prefer working from source, you can still clone the repo for development, but you no longer need to clone this repository just to start the server.
@@ -84,10 +84,10 @@ opensandbox-server init-config ~/.sandbox.toml --example docker
 #### 2. Start the Sandbox Server
 
 ```bash
-opensandbox-server
+uvx opensandbox-server
 
 # Show help
-# opensandbox-server -h
+# uvx opensandbox-server -h
 ```
 
 #### 3. Create a Code Interpreter and Execute Commands/Codes
